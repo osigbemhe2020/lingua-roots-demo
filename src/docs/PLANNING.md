@@ -151,11 +151,16 @@ After the last question is answered and Continue is tapped, the learner sees a s
 ---
 
 ## Explicitly out of scope for this exercise
-- Live backend / persistence beyond in-memory session state
-- Multi-lesson navigation or a lesson list/dashboard screen beyond the single lesson flow
-- Authentication
-- Selected language actually changing lesson content (only one mock dataset exists; selection is UI-only for this exercise)
-- Localization/i18n implementation (acknowledged as a future concern given the product's multi-language target market, not built here)
+- **Live backend / persistence beyond in-memory session state**
+- **Multi-lesson navigation or dashboard beyond single lesson flow**
+- **Authentication**
+- **Real Speech-to-Text (STT) / Native Microphone Audio Capture**:
+  - *Technical Rationale & Constraints*:
+    1. **Ecosystem & Runtime Limitations**: Native speech recognition libraries (such as `@react-native-voice/voice`) require custom native bindings and cannot run inside standard Expo Go without custom development builds (`eas build` or `npx expo run:ios|android`).
+    2. **Language Model Availability**: Stock mobile STT engines (Apple Speech / Android SpeechRecognizer) lack reliable acoustic models and tonal recognition for low-resource indigenous African languages (Yoruba, Igbo, Hausa).
+    3. **Cloud API & Security Boundaries**: Integrating third-party cloud STT (e.g. OpenAI Whisper or Google Cloud Speech) requires client-side secret exposure or a dedicated backend proxy pipeline (audio buffer streaming, chunking, and latency overhead), which exceeds the frontend scope of this assessment.
+    4. **Assessment Alignment**: The brief explicitly outlines audio and speech as mockable interactions ("🔊 tap to hear" and simulated speak). Simulating the UI interaction provides predictable, cross-platform reviewability without hardware permission blockers.
+- **Localization/i18n implementation** (acknowledged as a future concern given the product's multi-language target market, not built here)
 
 ## Screen map
 1. Splash / Welcome (Story 0a)

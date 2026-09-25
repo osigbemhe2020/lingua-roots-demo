@@ -24,6 +24,7 @@ export type ListenAndTypeQuestion = BaseQuestion & {
     type: 'listen_and_type';
     audioLabel: string; // what the mock "audio" represents — no real audio file required
     correctAnswer: string; // compared case/whitespace-insensitively
+    wordBank?: string[]; // word pills for Duolingo-style pill assembly
 };
 
 export type MatchPairsQuestion = BaseQuestion & {
@@ -72,6 +73,7 @@ export const mockLessons: Record<LanguageId, Question[]> = {
             xp: 15,
             audioLabel: 'Jambo',
             correctAnswer: 'Jambo',
+            wordBank: ['Jambo', 'Habari', 'Asante', 'Karibu'],
         },
         {
             id: 'sw-mp-1',
@@ -117,6 +119,7 @@ export const mockLessons: Record<LanguageId, Question[]> = {
             xp: 15,
             audioLabel: 'Báwo ni',
             correctAnswer: 'Báwo ni',
+            wordBank: ['Báwo', 'ni', 'Ẹ', 'ṣé', 'Káàbọ̀'],
         },
         {
             id: 'yo-mp-1',
@@ -162,6 +165,7 @@ export const mockLessons: Record<LanguageId, Question[]> = {
             xp: 15,
             audioLabel: 'Ndewo',
             correctAnswer: 'Ndewo',
+            wordBank: ['Ndewo', 'Nnọọ', 'Daalụ', 'Kedụ'],
         },
         {
             id: 'ig-mp-1',
@@ -207,6 +211,7 @@ export const mockLessons: Record<LanguageId, Question[]> = {
             xp: 15,
             audioLabel: 'Sannu',
             correctAnswer: 'Sannu',
+            wordBank: ['Sannu', 'Na', 'gode', 'Lafiya'],
         },
         {
             id: 'ha-mp-1',

@@ -4,9 +4,18 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { fonts, fontSize, lineHeight } from '../theme/typography';
+import { fonts, fontSize } from '../theme/typography';
 import { LANGUAGES } from '../data/languages';
-import { mockLessons, Question, LanguageId, MultipleChoiceQuestion } from '../data/mockLessons';
+import {
+    mockLessons,
+    Question,
+    LanguageId,
+    MultipleChoiceQuestion,
+    WordBankQuestion,
+    ListenAndTypeQuestion,
+    MatchPairsQuestion,
+} from '../data/mockLessons';
+import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 
 export default function LessonScreen() {
     const router = useRouter();
@@ -30,33 +39,94 @@ export default function LessonScreen() {
 
     // Lesson state
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [xp, setXp] = useState(350);
     const [isCompleted, setIsCompleted] = useState(false);
 
+    // Question interaction state
+    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [selectedWords, setSelectedWords] = useState<string[]>([]);
+    const [matchedPairsCount, setMatchedPairsCount] = useState(0);
+
+    // Submission state
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+
     const currentQuestion = questions[currentIndex] || questions[0];
 
-    // Get options for current question
-    const options: string[] =
-        'options' in currentQuestion
-            ? (currentQuestion as MultipleChoiceQuestion).options
-            : [];
+    // Determine whether user has provided an answer ready to check
+    const isAnswerReady = (): boolean => {
+        if (isSubmitted) return true;
+
+        switch (currentQuestion.type) {
+            case 'multiple_choice':
+            case 'fill_in_blank':
+                return selectedOption !== null;
+            case 'word_bank':
+                return selectedWords.length > 0;
+            case 'listen_and_type':
+                return selectedWords.length > 0;
+            case 'match_pairs':
+                return (
+                    matchedPairsCount === (currentQuestion as MatchPairsQuestion).pairs.length
+                );
+            default:
+                return false;
+        }
+    };
 
     const handleSelectOption = (option: string) => {
         if (isSubmitted) return;
         setSelectedOption(option);
     };
 
+    const handleWordsChange = (words: string[]) => {
+        if (isSubmitted) return;
+        setSelectedWords(words);
+    };
+
+    const handleMatchProgress = (matchedCount: number) => {
+        setMatchedPairsCount(matchedCount);
+    };
+
     const handleCheckOrContinue = () => {
-        if (!selectedOption) return;
+        if (!isAnswerReady()) return;
 
         if (!isSubmitted) {
-            // Evaluate answer
-            const correct =
-                'correctAnswer' in currentQuestion &&
-                (currentQuestion as MultipleChoiceQuestion).correctAnswer === selectedOption;
+            let correct = false;
+
+            switch (currentQuestion.type) {
+                case 'multiple_choice':
+                case 'fill_in_blank':
+                    correct =
+                        (currentQuestion as MultipleChoiceQuestion).correctAnswer ===
+                        selectedOption;
+                    break;
+
+                case 'word_bank': {
+                    const expected = (currentQuestion as WordBankQuestion).correctOrder
+                        .join(' ')
+                        .trim()
+                        .toLowerCase();
+                    const actual = selectedWords.join(' ').trim().toLowerCase();
+                    correct = expected === actual;
+                    break;
+                }
+
+                case 'listen_and_type': {
+                    const expected = (currentQuestion as ListenAndTypeQuestion).correctAnswer
+                        .trim()
+                        .toLowerCase();
+                    const actual = selectedWords.join(' ').trim().toLowerCase();
+                    correct = expected === actual;
+                    break;
+                }
+
+                case 'match_pairs':
+                    correct =
+                        matchedPairsCount ===
+                        (currentQuestion as MatchPairsQuestion).pairs.length;
+                    break;
+            }
 
             setIsSubmitted(true);
             setIsCorrect(correct);
@@ -65,29 +135,18 @@ export default function LessonScreen() {
                 setXp((prev) => prev + currentQuestion.xp);
             }
         } else {
-            // Advance to next question
+            // Advance to next question or complete lesson
             if (currentIndex + 1 < questions.length) {
                 setCurrentIndex((prev) => prev + 1);
                 setSelectedOption(null);
+                setSelectedWords([]);
+                setMatchedPairsCount(0);
                 setIsSubmitted(false);
                 setIsCorrect(null);
             } else {
                 setIsCompleted(true);
             }
         }
-    };
-
-    const renderQuestionPrompt = () => {
-        if ('prompt' in currentQuestion) {
-            return currentQuestion.prompt;
-        }
-        if ('englishPrompt' in currentQuestion) {
-            return `Translate: "${currentQuestion.englishPrompt}"`;
-        }
-        if ('audioLabel' in currentQuestion) {
-            return `Type what you hear: "${currentQuestion.audioLabel}"`;
-        }
-        return `Practice ${selectedLanguage.name}`;
     };
 
     // Completion state
@@ -146,6 +205,8 @@ export default function LessonScreen() {
         );
     }
 
+    const ready = isAnswerReady();
+
     return (
         <View
             style={[
@@ -197,7 +258,7 @@ export default function LessonScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Illustration / Graphic Card */}
+                {/* Brand / Culture Banner */}
                 <View style={styles.graphicCard}>
                     <View style={styles.graphicInner}>
                         <View style={styles.brandWordmark}>
@@ -215,64 +276,18 @@ export default function LessonScreen() {
                     </View>
                 </View>
 
-                {/* Question Prompt */}
-                <Text style={styles.questionPrompt}>{renderQuestionPrompt()}</Text>
-
-                {/* Multiple-Choice Options */}
-                <View style={styles.optionsList}>
-                    {options.map((option) => {
-                        const isSelected = selectedOption === option;
-                        const isCorrectOption =
-                            isSubmitted &&
-                            'correctAnswer' in currentQuestion &&
-                            (currentQuestion as MultipleChoiceQuestion).correctAnswer === option;
-                        const isWrongSelected = isSubmitted && isSelected && !isCorrect;
-
-                        return (
-                            <Pressable
-                                key={option}
-                                onPress={() => handleSelectOption(option)}
-                                style={[
-                                    styles.optionCard,
-                                    isSelected && !isSubmitted && styles.optionCardSelected,
-                                    isSubmitted && isCorrectOption && styles.optionCardCorrect,
-                                    isWrongSelected && styles.optionCardWrong,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.optionText,
-                                        isSelected && styles.optionTextSelected,
-                                    ]}
-                                >
-                                    {option}
-                                </Text>
-
-                                {/* Radio Circle or Checkmark */}
-                                {isSelected || (isSubmitted && isCorrectOption) ? (
-                                    <View
-                                        style={[
-                                            styles.radioSelected,
-                                            isSubmitted && isCorrectOption
-                                                ? styles.radioCorrect
-                                                : isWrongSelected
-                                                ? styles.radioWrong
-                                                : null,
-                                        ]}
-                                    >
-                                        <Ionicons
-                                            name={isWrongSelected ? 'close' : 'checkmark'}
-                                            size={14}
-                                            color={colors.neutral[50]}
-                                        />
-                                    </View>
-                                ) : (
-                                    <View style={styles.radioUnselected} />
-                                )}
-                            </Pressable>
-                        );
-                    })}
-                </View>
+                {/* Modular Question View Component */}
+                <QuestionRenderer
+                    question={currentQuestion}
+                    selectedOption={selectedOption}
+                    onSelectOption={handleSelectOption}
+                    selectedWords={selectedWords}
+                    onWordsChange={handleWordsChange}
+                    matchedPairsCount={matchedPairsCount}
+                    onMatchProgress={handleMatchProgress}
+                    isSubmitted={isSubmitted}
+                    isCorrect={isCorrect}
+                />
             </ScrollView>
 
             {/* Bottom Action CTA */}
@@ -280,12 +295,12 @@ export default function LessonScreen() {
                 <Pressable
                     style={({ pressed }) => [
                         styles.actionButton,
-                        !selectedOption && styles.actionButtonDisabled,
+                        !ready && styles.actionButtonDisabled,
                         isSubmitted && isCorrect && styles.actionButtonCorrect,
                         isSubmitted && !isCorrect && styles.actionButtonWrong,
-                        pressed && { opacity: 0.9 },
+                        pressed && ready && { opacity: 0.9 },
                     ]}
-                    disabled={!selectedOption}
+                    disabled={!ready}
                     onPress={handleCheckOrContinue}
                 >
                     <Text style={styles.actionButtonText}>
@@ -411,75 +426,6 @@ const styles = StyleSheet.create({
         fontSize: fontSize.xs,
         color: colors.textSecondary,
         marginTop: 2,
-    },
-    questionPrompt: {
-        fontFamily: fonts.headline,
-        fontSize: 22,
-        lineHeight: 30,
-        color: colors.textPrimary,
-        textAlign: 'center',
-        fontWeight: '700',
-        marginBottom: 24,
-        paddingHorizontal: 12,
-    },
-    optionsList: {
-        gap: 14,
-    },
-    optionCard: {
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: colors.surface,
-        borderWidth: 1.5,
-        borderColor: colors.neutral[300],
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-    },
-    optionCardSelected: {
-        borderWidth: 2.5,
-        borderColor: colors.primary[800],
-        backgroundColor: colors.surface,
-    },
-    optionCardCorrect: {
-        borderWidth: 2.5,
-        borderColor: colors.success,
-        backgroundColor: colors.successBg,
-    },
-    optionCardWrong: {
-        borderWidth: 2.5,
-        borderColor: colors.error,
-        backgroundColor: colors.errorBg,
-    },
-    optionText: {
-        fontFamily: fonts.body,
-        fontSize: fontSize.lg,
-        color: colors.textPrimary,
-    },
-    optionTextSelected: {
-        fontFamily: fonts.headline,
-        fontWeight: '700',
-    },
-    radioUnselected: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: colors.neutral[300],
-    },
-    radioSelected: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: colors.primary[800],
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    radioCorrect: {
-        backgroundColor: colors.success,
-    },
-    radioWrong: {
-        backgroundColor: colors.error,
     },
     footer: {
         paddingHorizontal: 20,
