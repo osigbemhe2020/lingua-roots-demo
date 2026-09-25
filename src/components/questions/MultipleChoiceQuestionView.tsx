@@ -56,7 +56,7 @@ export const MultipleChoiceQuestionView: React.FC<MultipleChoiceQuestionViewProp
 
             {/* Multiple-Choice Options */}
             <View style={styles.optionsList}>
-                {question.options.map((option) => {
+                {question.options.map((option, index) => {
                     const isSelected = selectedOption === option;
                     const isCorrectOption = isSubmitted && question.correctAnswer === option;
                     const isWrongSelected = isSubmitted && isSelected && !isCorrect;
@@ -74,34 +74,64 @@ export const MultipleChoiceQuestionView: React.FC<MultipleChoiceQuestionViewProp
                                 pressed && !isSubmitted && styles.optionCardPressed,
                             ]}
                         >
-                            <Text
+                            {/* Left Badge: Number (1,2,3,4) or State Icon */}
+                            <View
                                 style={[
-                                    styles.optionText,
-                                    isSelected && styles.optionTextSelected,
-                                    isSubmitted && isCorrectOption && styles.optionTextCorrect,
-                                    isWrongSelected && styles.optionTextWrong,
+                                    styles.indexBadge,
+                                    isSelected && !isSubmitted && styles.indexBadgeSelected,
+                                    isSubmitted && isCorrectOption && styles.indexBadgeCorrect,
+                                    isWrongSelected && styles.indexBadgeWrong,
                                 ]}
                             >
-                                {option}
-                            </Text>
+                                {isSubmitted && isCorrectOption ? (
+                                    <Ionicons name="checkmark" size={14} color={colors.neutral[50]} />
+                                ) : isWrongSelected ? (
+                                    <Ionicons name="close" size={14} color={colors.neutral[50]} />
+                                ) : (
+                                    <Text
+                                        style={[
+                                            styles.indexBadgeText,
+                                            isSelected && !isSubmitted && styles.indexBadgeTextSelected,
+                                        ]}
+                                    >
+                                        {index + 1}
+                                    </Text>
+                                )}
+                            </View>
 
-                            {/* Radio Circle or Checkmark */}
-                            {isSelected || (isSubmitted && isCorrectOption) ? (
-                                <View
+                            {/* Option Label & Sub-label */}
+                            <View style={styles.textContainer}>
+                                <Text
                                     style={[
-                                        styles.radioSelected,
-                                        isSubmitted && isCorrectOption
-                                            ? styles.radioCorrect
-                                            : isWrongSelected
-                                            ? styles.radioWrong
-                                            : null,
+                                        styles.optionText,
+                                        isSelected && styles.optionTextSelected,
+                                        isSubmitted && isCorrectOption && styles.optionTextCorrect,
+                                        isWrongSelected && styles.optionTextWrong,
                                     ]}
                                 >
-                                    <Ionicons
-                                        name={isWrongSelected ? 'close' : 'checkmark'}
-                                        size={14}
-                                        color={colors.neutral[50]}
-                                    />
+                                    {option}
+                                </Text>
+
+                                {isSubmitted && isCorrectOption && (
+                                    <Text style={styles.subLabelCorrect}>Correct translation</Text>
+                                )}
+                                {isWrongSelected && (
+                                    <Text style={styles.subLabelWrong}>Your answer</Text>
+                                )}
+                            </View>
+
+                            {/* Right Status Indicator: Checkmark or Cross or Radio */}
+                            {isSubmitted && isCorrectOption ? (
+                                <View style={styles.statusBadgeCorrect}>
+                                    <Ionicons name="checkmark" size={16} color={colors.neutral[50]} />
+                                </View>
+                            ) : isWrongSelected ? (
+                                <View style={styles.statusBadgeWrong}>
+                                    <Ionicons name="close" size={16} color={colors.neutral[50]} />
+                                </View>
+                            ) : isSelected ? (
+                                <View style={styles.radioSelected}>
+                                    <View style={styles.radioSelectedDot} />
                                 </View>
                             ) : (
                                 <View style={styles.radioUnselected} />
@@ -156,20 +186,20 @@ const styles = StyleSheet.create({
         gap: 14,
     },
     optionCard: {
-        height: 64,
-        borderRadius: 32,
+        minHeight: 68,
+        borderRadius: 34,
         backgroundColor: colors.surface,
         borderWidth: 1.5,
         borderColor: colors.neutral[300],
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.04,
         shadowRadius: 6,
-        elevation: 1,
+        elevation: 2,
     },
     optionCardPressed: {
         backgroundColor: colors.neutral[100],
@@ -181,13 +211,44 @@ const styles = StyleSheet.create({
     },
     optionCardCorrect: {
         borderWidth: 2.5,
-        borderColor: colors.success,
-        backgroundColor: colors.successBg,
+        borderColor: colors.secondary[500],
+        backgroundColor: '#CFDECA', // Soft green matching reference screenshot
     },
     optionCardWrong: {
         borderWidth: 2.5,
         borderColor: colors.error,
-        backgroundColor: colors.errorBg,
+        backgroundColor: colors.errorBg, // Soft red
+    },
+    indexBadge: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: colors.neutral[200],
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 14,
+    },
+    indexBadgeSelected: {
+        backgroundColor: colors.primary[800],
+    },
+    indexBadgeCorrect: {
+        backgroundColor: colors.secondary[600],
+    },
+    indexBadgeWrong: {
+        backgroundColor: colors.error,
+    },
+    indexBadgeText: {
+        fontFamily: fonts.headline,
+        fontSize: fontSize.sm,
+        color: colors.textPrimary,
+        fontWeight: '700',
+    },
+    indexBadgeTextSelected: {
+        color: colors.neutral[50],
+    },
+    textContainer: {
+        flex: 1,
+        justifyContent: 'center',
     },
     optionText: {
         fontFamily: fonts.body,
@@ -202,12 +263,24 @@ const styles = StyleSheet.create({
     optionTextCorrect: {
         fontFamily: fonts.headline,
         fontWeight: '700',
-        color: colors.secondary[700],
+        color: colors.secondary[900],
     },
     optionTextWrong: {
         fontFamily: fonts.headline,
         fontWeight: '700',
         color: colors.error,
+    },
+    subLabelCorrect: {
+        fontFamily: fonts.body,
+        fontSize: fontSize.xs,
+        color: colors.secondary[700],
+        marginTop: 2,
+    },
+    subLabelWrong: {
+        fontFamily: fonts.body,
+        fontSize: fontSize.xs,
+        color: colors.error,
+        marginTop: 2,
     },
     radioUnselected: {
         width: 24,
@@ -215,19 +288,40 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 2,
         borderColor: colors.neutral[300],
+        marginLeft: 12,
     },
     radioSelected: {
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: colors.primary[800],
+        borderWidth: 2,
+        borderColor: colors.primary[800],
         justifyContent: 'center',
         alignItems: 'center',
+        marginLeft: 12,
     },
-    radioCorrect: {
-        backgroundColor: colors.success,
+    radioSelectedDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: colors.primary[800],
     },
-    radioWrong: {
+    statusBadgeCorrect: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: colors.secondary[600],
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 12,
+    },
+    statusBadgeWrong: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
         backgroundColor: colors.error,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 12,
     },
 });

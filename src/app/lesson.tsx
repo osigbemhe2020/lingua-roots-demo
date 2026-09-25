@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,15 +7,16 @@ import { colors } from '../theme/colors';
 import { fonts, fontSize } from '../theme/typography';
 import { LANGUAGES } from '../data/languages';
 import {
-    mockLessons,
-    Question,
     LanguageId,
     MultipleChoiceQuestion,
     WordBankQuestion,
     ListenAndTypeQuestion,
-    MatchPairsQuestion,
 } from '../data/mockLessons';
+import { useLessonProgress } from '../hooks/UseLessonProgress';
+import { checkAnswer, UserAnswer } from '../utils/checkAnswer';
+import { ProgressHeader } from '../components/ProgressBarHeader';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
+import { FeedbackSheet } from '../components/FeedbackSheet';
 
 export default function LessonScreen() {
     const router = useRouter();
@@ -35,122 +36,165 @@ export default function LessonScreen() {
     const selectedLanguage =
         LANGUAGES.find((lang) => lang.id === languageId || lang.id === langKey) || LANGUAGES[0];
 
-    const questions: Question[] = mockLessons[langKey] || mockLessons.sw;
+    // Lesson state — owned by useLessonProgress reducer state machine
+    const { state, dispatch, currentQuestion, isComplete, progress } = useLessonProgress(langKey);
 
-    // Lesson state
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [xp, setXp] = useState(350);
-    const [isCompleted, setIsCompleted] = useState(false);
+    const isSubmitted = state.answerState !== 'idle';
+    const isCorrect =
+        state.answerState === 'submitted_correct'
+            ? true
+            : state.answerState === 'submitted_incorrect'
+            ? false
+            : null;
 
-    // Question interaction state
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
-    const [selectedWords, setSelectedWords] = useState<string[]>([]);
-    const [matchedPairsCount, setMatchedPairsCount] = useState(0);
+    // Derived answer states for child components
+    const selectedOption: string | null =
+        state.selectedAnswer &&
+        typeof state.selectedAnswer === 'object' &&
+        'value' in state.selectedAnswer &&
+        typeof (state.selectedAnswer as { value: unknown }).value === 'string'
+            ? (state.selectedAnswer as { value: string }).value
+            : null;
 
-    // Submission state
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const selectedWords: string[] =
+        state.selectedAnswer &&
+        typeof state.selectedAnswer === 'object' &&
+        'wordsArray' in state.selectedAnswer &&
+        Array.isArray((state.selectedAnswer as { wordsArray: unknown }).wordsArray)
+            ? (state.selectedAnswer as { wordsArray: string[] }).wordsArray
+            : state.selectedAnswer &&
+              typeof state.selectedAnswer === 'object' &&
+              'value' in state.selectedAnswer &&
+              Array.isArray((state.selectedAnswer as { value: unknown }).value)
+            ? (state.selectedAnswer as { value: string[] }).value
+            : [];
 
-    const currentQuestion = questions[currentIndex] || questions[0];
+    const matchedPairsCount: number =
+        state.selectedAnswer &&
+        typeof state.selectedAnswer === 'object' &&
+        'count' in state.selectedAnswer &&
+        typeof (state.selectedAnswer as { count: unknown }).count === 'number'
+            ? (state.selectedAnswer as { count: number }).count
+            : 0;
 
-    // Determine whether user has provided an answer ready to check
+    const handleSelectOption = (option: string) => {
+        if (isSubmitted || !currentQuestion) return;
+        const answer: UserAnswer = {
+            type: currentQuestion.type as 'multiple_choice' | 'fill_in_blank',
+            value: option,
+        };
+        dispatch({ type: 'SELECT_ANSWER', payload: answer });
+    };
+
+    const handleWordsChange = (words: string[]) => {
+        if (isSubmitted || !currentQuestion) return;
+        if (currentQuestion.type === 'word_bank') {
+            const answer: UserAnswer = {
+                type: 'word_bank',
+                value: words,
+            };
+            dispatch({ type: 'SELECT_ANSWER', payload: answer });
+        } else if (currentQuestion.type === 'listen_and_type') {
+            const answer = {
+                type: 'listen_and_type' as const,
+                value: words.join(' '),
+                wordsArray: words,
+            };
+            dispatch({ type: 'SELECT_ANSWER', payload: answer });
+        }
+    };
+
+    const handleMatchProgress = (matchedCount: number, totalCount: number) => {
+        if (isSubmitted || !currentQuestion) return;
+        if (currentQuestion.type === 'match_pairs') {
+            const pairs = matchedCount === totalCount ? currentQuestion.pairs : [];
+            const answer: UserAnswer = {
+                type: 'match_pairs',
+                value: pairs,
+            };
+            dispatch({
+                type: 'SELECT_ANSWER',
+                payload: { ...answer, count: matchedCount },
+            });
+        }
+    };
+
     const isAnswerReady = (): boolean => {
         if (isSubmitted) return true;
+        if (!currentQuestion || !state.selectedAnswer) return false;
 
         switch (currentQuestion.type) {
             case 'multiple_choice':
             case 'fill_in_blank':
                 return selectedOption !== null;
             case 'word_bank':
-                return selectedWords.length > 0;
             case 'listen_and_type':
                 return selectedWords.length > 0;
             case 'match_pairs':
-                return (
-                    matchedPairsCount === (currentQuestion as MatchPairsQuestion).pairs.length
-                );
+                return matchedPairsCount === currentQuestion.pairs.length;
             default:
                 return false;
         }
     };
 
-    const handleSelectOption = (option: string) => {
-        if (isSubmitted) return;
-        setSelectedOption(option);
-    };
-
-    const handleWordsChange = (words: string[]) => {
-        if (isSubmitted) return;
-        setSelectedWords(words);
-    };
-
-    const handleMatchProgress = (matchedCount: number) => {
-        setMatchedPairsCount(matchedCount);
-    };
-
     const handleCheckOrContinue = () => {
-        if (!isAnswerReady()) return;
+        if (!currentQuestion) return;
 
         if (!isSubmitted) {
-            let correct = false;
-
-            switch (currentQuestion.type) {
-                case 'multiple_choice':
-                case 'fill_in_blank':
-                    correct =
-                        (currentQuestion as MultipleChoiceQuestion).correctAnswer ===
-                        selectedOption;
-                    break;
-
-                case 'word_bank': {
-                    const expected = (currentQuestion as WordBankQuestion).correctOrder
-                        .join(' ')
-                        .trim()
-                        .toLowerCase();
-                    const actual = selectedWords.join(' ').trim().toLowerCase();
-                    correct = expected === actual;
-                    break;
-                }
-
-                case 'listen_and_type': {
-                    const expected = (currentQuestion as ListenAndTypeQuestion).correctAnswer
-                        .trim()
-                        .toLowerCase();
-                    const actual = selectedWords.join(' ').trim().toLowerCase();
-                    correct = expected === actual;
-                    break;
-                }
-
-                case 'match_pairs':
-                    correct =
-                        matchedPairsCount ===
-                        (currentQuestion as MatchPairsQuestion).pairs.length;
-                    break;
-            }
-
-            setIsSubmitted(true);
-            setIsCorrect(correct);
-
-            if (correct) {
-                setXp((prev) => prev + currentQuestion.xp);
-            }
+            if (!isAnswerReady()) return;
+            const answer = state.selectedAnswer as UserAnswer;
+            const correct = checkAnswer(currentQuestion, answer);
+            dispatch({
+                type: 'SUBMIT_ANSWER',
+                payload: { isCorrect: correct, xp: currentQuestion.xp },
+            });
         } else {
-            // Advance to next question or complete lesson
-            if (currentIndex + 1 < questions.length) {
-                setCurrentIndex((prev) => prev + 1);
-                setSelectedOption(null);
-                setSelectedWords([]);
-                setMatchedPairsCount(0);
-                setIsSubmitted(false);
-                setIsCorrect(null);
-            } else {
-                setIsCompleted(true);
-            }
+            dispatch({ type: 'CONTINUE' });
         }
     };
 
+    // Calculate feedback message and correct answer string for Story 4 feedback sheet
+    const getFeedbackDetails = () => {
+        if (!currentQuestion) return { correctAnswerText: '', explanation: '' };
+
+        switch (currentQuestion.type) {
+            case 'multiple_choice':
+            case 'fill_in_blank': {
+                const q = currentQuestion as MultipleChoiceQuestion;
+                return {
+                    correctAnswerText: q.correctAnswer,
+                    explanation: `${q.correctAnswer} is the correct translation!`,
+                };
+            }
+            case 'word_bank': {
+                const q = currentQuestion as WordBankQuestion;
+                const orderStr = q.correctOrder.join(' ');
+                return {
+                    correctAnswerText: orderStr,
+                    explanation: `"${orderStr}" correctly translates "${q.englishPrompt}"`,
+                };
+            }
+            case 'listen_and_type': {
+                const q = currentQuestion as ListenAndTypeQuestion;
+                return {
+                    correctAnswerText: q.correctAnswer,
+                    explanation: `"${q.correctAnswer}" is what was spoken!`,
+                };
+            }
+            case 'match_pairs':
+                return {
+                    correctAnswerText: 'All pairs matched',
+                    explanation: 'All vocabulary pairs matched successfully!',
+                };
+            default:
+                return { correctAnswerText: '', explanation: '' };
+        }
+    };
+
+    const { correctAnswerText, explanation } = getFeedbackDetails();
+
     // Completion state
-    if (isCompleted) {
+    if (isComplete) {
         return (
             <View
                 style={[
@@ -170,10 +214,8 @@ export default function LessonScreen() {
                         <Feather name="x" size={24} color={colors.textPrimary} />
                     </Pressable>
                     <View style={styles.xpBadge}>
-                        <View style={styles.coinCircle}>
-                            <Text style={styles.coinIcon}>$</Text>
-                        </View>
-                        <Text style={styles.xpText}>{xp}</Text>
+                        <Ionicons name="trophy" size={14} color={colors.primary[800]} />
+                        <Text style={styles.xpText}>XP {state.totalXp}</Text>
                     </View>
                 </View>
 
@@ -188,7 +230,7 @@ export default function LessonScreen() {
                         </Text>
 
                         <View style={styles.xpGainedPill}>
-                            <Text style={styles.xpGainedText}>Total XP: {xp}</Text>
+                            <Text style={styles.xpGainedText}>Total XP: {state.totalXp}</Text>
                         </View>
                     </View>
                 </View>
@@ -213,46 +255,20 @@ export default function LessonScreen() {
                 styles.container,
                 {
                     paddingTop: Math.max(insets.top, 16),
-                    paddingBottom: Math.max(insets.bottom, 20),
+                    paddingBottom: Math.max(insets.bottom, 0),
                 },
             ]}
         >
-            {/* Header: Close, Segmented Progress, XP */}
-            <View style={styles.header}>
-                <Pressable
-                    style={styles.iconButton}
-                    onPress={() => router.back()}
-                    hitSlop={12}
-                >
-                    <Feather name="x" size={24} color={colors.textPrimary} />
-                </Pressable>
-
-                {/* Segmented Progress Indicators */}
-                <View style={styles.progressSegments}>
-                    {questions.map((_, index) => {
-                        const isFilled = index <= currentIndex;
-                        return (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.progressSegment,
-                                    isFilled
-                                        ? styles.progressSegmentFilled
-                                        : styles.progressSegmentUnfilled,
-                                ]}
-                            />
-                        );
-                    })}
-                </View>
-
-                {/* XP / Coin Counter */}
-                <View style={styles.xpBadge}>
-                    <View style={styles.coinCircle}>
-                        <Text style={styles.coinIcon}>$</Text>
-                    </View>
-                    <Text style={styles.xpText}>{xp}</Text>
-                </View>
-            </View>
+            {/* Design Progress Header: "Question X of Y", "Swahili Basics", and smooth green progress bar */}
+            <ProgressHeader
+                currentQuestionNumber={state.resolvedCount + 1}
+                totalQuestions={state.totalCount}
+                categoryTitle={`${selectedLanguage.name} Basics`}
+                progress={progress}
+                totalXp={state.totalXp}
+                lastXpGained={state.lastXpGained}
+                onClose={() => router.back()}
+            />
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -277,37 +293,30 @@ export default function LessonScreen() {
                 </View>
 
                 {/* Modular Question View Component */}
-                <QuestionRenderer
-                    question={currentQuestion}
-                    selectedOption={selectedOption}
-                    onSelectOption={handleSelectOption}
-                    selectedWords={selectedWords}
-                    onWordsChange={handleWordsChange}
-                    matchedPairsCount={matchedPairsCount}
-                    onMatchProgress={handleMatchProgress}
-                    isSubmitted={isSubmitted}
-                    isCorrect={isCorrect}
-                />
+                {currentQuestion && (
+                    <QuestionRenderer
+                        question={currentQuestion}
+                        selectedOption={selectedOption}
+                        onSelectOption={handleSelectOption}
+                        selectedWords={selectedWords}
+                        onWordsChange={handleWordsChange}
+                        matchedPairsCount={matchedPairsCount}
+                        onMatchProgress={handleMatchProgress}
+                        isSubmitted={isSubmitted}
+                        isCorrect={isCorrect}
+                    />
+                )}
             </ScrollView>
 
-            {/* Bottom Action CTA */}
-            <View style={styles.footer}>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.actionButton,
-                        !ready && styles.actionButtonDisabled,
-                        isSubmitted && isCorrect && styles.actionButtonCorrect,
-                        isSubmitted && !isCorrect && styles.actionButtonWrong,
-                        pressed && ready && { opacity: 0.9 },
-                    ]}
-                    disabled={!ready}
-                    onPress={handleCheckOrContinue}
-                >
-                    <Text style={styles.actionButtonText}>
-                        {isSubmitted ? 'Continue' : 'Check Answer'}
-                    </Text>
-                </Pressable>
-            </View>
+            {/* Story 4: Dynamic Bottom Feedback Sheet (Green for correct, Red for incorrect) */}
+            <FeedbackSheet
+                isSubmitted={isSubmitted}
+                isCorrect={isCorrect}
+                isAnswerReady={ready}
+                onCheckOrContinue={handleCheckOrContinue}
+                correctAnswerText={correctAnswerText}
+                explanation={explanation}
+            />
         </View>
     );
 }
@@ -323,51 +332,18 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 12,
-        gap: 12,
     },
     iconButton: {
         padding: 4,
-    },
-    progressSegments: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 12,
-    },
-    progressSegment: {
-        flex: 1,
-        height: 8,
-        borderRadius: 4,
-    },
-    progressSegmentFilled: {
-        backgroundColor: colors.tertiary[400],
-    },
-    progressSegmentUnfilled: {
-        backgroundColor: colors.neutral[300],
     },
     xpBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.neutral[200],
-        paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
         borderRadius: 16,
         gap: 6,
-    },
-    coinCircle: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: colors.primary[800],
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    coinIcon: {
-        color: colors.neutral[50],
-        fontSize: 10,
-        fontWeight: 'bold',
     },
     xpText: {
         fontFamily: fonts.headline,
@@ -377,7 +353,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 10,
+        paddingTop: 4,
         paddingBottom: 24,
     },
     graphicCard: {
@@ -437,15 +413,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary[800],
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    actionButtonDisabled: {
-        backgroundColor: colors.disabled,
-    },
-    actionButtonCorrect: {
-        backgroundColor: colors.success,
-    },
-    actionButtonWrong: {
-        backgroundColor: colors.primary[800],
     },
     actionButtonText: {
         fontFamily: fonts.label,

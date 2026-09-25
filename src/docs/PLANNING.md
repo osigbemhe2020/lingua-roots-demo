@@ -88,52 +88,65 @@ A learner sees all answer options for the current question and can tap one to ma
 ---
 
 ## Story 4 — Answer submission + correct/incorrect feedback
-
+ 
 **Context**
 Depends on Story 3's selection state existing. This is the core "does the learner get told the truth clearly" requirement, and the spec doesn't define what happens to the option the learner didn't pick when they're wrong.
-
+ 
 **Outcome**
 Once a learner submits their selected answer, they immediately see whether it was correct or incorrect, with a visible, unambiguous state on the option(s) involved.
-
+ 
 **Acceptance criteria**
 1. Correct submission marks the selected option in a success state (e.g. green) with confirming feedback text
 2. Incorrect submission marks the selected option in an error state (e.g. red) and reveals which option was actually correct
 3. Once submitted, options become non-interactive (no changing the answer after the fact)
 4. **Open gap:** spec doesn't define behavior for "no answer selected" — assumption: Continue/submit is disabled until a selection is made, documented rather than inferred from any specific reference app's forgiving flow
-
 ---
 
 ## Story 5 — XP / progress update after answering
-
+ 
 **Context**
 Depends on Story 4's correctness result. The spec says "a simple XP/progress update" without defining the scoring rule — correct-only, partial credit, or flat participation credit are all reasonable and it doesn't say which.
-
+ 
 **Outcome**
 After answering, the learner sees some numeric progress value increase, giving a visible sense of reward tied to the interaction they just completed.
-
+ 
 **Acceptance criteria**
 1. An XP value is visible on screen at all times during the lesson
 2. Value updates immediately after a correct answer is evaluated
 3. Update is visually noticeable (not a silent number swap) — e.g. brief animation or highlight
 4. **Open gap:** scoring rule (correct-only vs. partial credit for wrong answers) is undefined in the brief — one rule chosen and stated explicitly as an assumption, not borrowed wholesale from any specific existing app's XP model
-
 ---
-
+ 
 ## Story 6 — Continue → next question
-
+ 
 **Context**
 Depends on Story 4 (feedback must be visible first) and closes the loop back to Story 1/2 (next question renders, progress updates).
-
+ 
 **Outcome**
 After seeing feedback, the learner taps Continue and moves to the next question in sequence, with progress and state resetting appropriately for the new question.
-
+ 
 **Acceptance criteria**
 1. Continue is disabled/hidden until an answer has been submitted
 2. Tapping Continue advances to the next question's data and resets selection/feedback state for that new question
 3. Progress indicator (Story 2) reflects the new position immediately
 4. **Open gap:** spec doesn't say whether Continue should be a full re-render or an animated transition — plain state swap chosen for this exercise, animation noted as a stretch item, not required
-
 ---
+ 
+## Story 6a — In-session adaptive requeue
+ 
+**Context**
+Requested as a "minor algorithm" for repetition based on answering. Important distinction documented here: this is **not** spaced repetition (SM-2/Leitner-style scheduling across days, which requires persisted review history and is out of scope). This is a same-session adaptive queue — a smaller, well-known pattern that real language apps also use within a single lesson.
+ 
+**Outcome**
+Answering a question incorrectly causes it to reappear later in the same lesson session, rather than being marked done and never revisited.
+ 
+**Acceptance criteria**
+1. The lesson is modeled as a queue of question IDs, not a fixed indexed array
+2. An incorrectly-answered question is re-inserted a few positions ahead in the queue (not immediately next, not appended at the very end)
+3. A cap exists on re-insertion (e.g. max 1 retry per question) so a single question cannot loop indefinitely
+4. Lesson completion is determined by the queue being empty, not by reaching a fixed original length
+5. Progress indicator (Story 2) reflects "questions resolved" against total unique questions, not raw index position, since queue length can grow as answers come in wrong
+6. **Open gap:** explicitly documented as in-session adaptive requeueing, not spaced repetition — no cross-session persistence, no review scheduling by date, stated plainly to avoid overclaiming the algorithm's sophistication
 
 ## Story 7 — End-of-lesson state (stretch, flagged not required)
 
