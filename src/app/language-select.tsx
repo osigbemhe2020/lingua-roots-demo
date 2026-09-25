@@ -1,12 +1,269 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
+import { fonts, fontSize, lineHeight } from '../theme/typography';
 
-const LanguageSelect = () => {
+import { LanguageOption, LANGUAGES } from '../data/languages';
+
+export default function LanguageSelect() {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const [selectedId, setSelectedId] = useState<string>('swahili');
+
+    const renderIcon = (option: LanguageOption, isSelected: boolean) => {
+        const iconColor = isSelected ? colors.primary[700] : colors.neutral[600];
+        const size = 20;
+
+        if (option.iconType === 'feather') {
+            return <Feather name={option.iconName as any} size={size} color={iconColor} />;
+        }
+        if (option.iconType === 'material') {
+            return <MaterialIcons name={option.iconName as any} size={size} color={iconColor} />;
+        }
+        return <Ionicons name={option.iconName as any} size={size} color={iconColor} />;
+    };
+
     return (
-        <View>
-            <Text>language-select</Text>
+        <View
+            style={[
+                styles.container,
+                {
+                    paddingTop: Math.max(insets.top, 16),
+                    paddingBottom: Math.max(insets.bottom, 20),
+                },
+            ]}
+        >
+            {/* Header */}
+            <View style={styles.header}>
+                <Pressable style={styles.menuButton} hitSlop={12}>
+                    <Feather name="menu" size={24} color={colors.textPrimary} />
+                </Pressable>
+
+                <Text style={styles.brandTitle}>LinguaRoots</Text>
+
+                <View style={styles.xpBadge}>
+                    <Text style={styles.xpText}>XP 0</Text>
+                </View>
+            </View>
+
+            {/* Main Content */}
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>
+                        {'Which language\nwould you like to\nlearn?'}
+                    </Text>
+                </View>
+
+                {/* 2-Column Grid */}
+                <View style={styles.grid}>
+                    {LANGUAGES.map((lang) => {
+                        const isSelected = lang.id === selectedId;
+
+                        return (
+                            <Pressable
+                                key={lang.id}
+                                onPress={() => setSelectedId(lang.id)}
+                                style={[
+                                    styles.card,
+                                    isSelected ? styles.cardSelected : styles.cardUnselected,
+                                ]}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View
+                                        style={[
+                                            styles.iconCircle,
+                                            isSelected ? styles.iconCircleSelected : styles.iconCircleUnselected,
+                                        ]}
+                                    >
+                                        {renderIcon(lang, isSelected)}
+                                    </View>
+
+                                    {isSelected && (
+                                        <View style={styles.checkBadge}>
+                                            <Ionicons name="checkmark" size={13} color={colors.neutral[50]} />
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View style={styles.cardFooter}>
+                                    <Text style={styles.languageName}>{lang.name}</Text>
+                                    <Text style={styles.languageGreeting}>{lang.greeting}</Text>
+                                </View>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+            </ScrollView>
+
+            {/* Footer CTA */}
+            <View style={styles.footer}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.continueButton,
+                        !selectedId && styles.continueButtonDisabled,
+                        pressed && { opacity: 0.9 },
+                    ]}
+                    onPress={() =>
+                        router.push({
+                            pathname: '/lesson',
+                            params: { languageId: selectedId },
+                        })
+                    }
+                >
+                    <Text style={styles.continueText}>Continue</Text>
+                    <Feather name="arrow-right" size={20} color={colors.neutral[50]} />
+                </Pressable>
+            </View>
         </View>
-    )
+    );
 }
 
-export default LanguageSelect
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+    },
+    menuButton: {
+        padding: 4,
+    },
+    brandTitle: {
+        fontFamily: fonts.headline,
+        fontSize: fontSize['2xl'],
+        color: colors.primary[700],
+        letterSpacing: -0.5,
+    },
+    xpBadge: {
+        backgroundColor: colors.tertiary[100],
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 14,
+    },
+    xpText: {
+        fontFamily: fonts.headline,
+        fontSize: fontSize.xs,
+        color: colors.primary[800],
+        fontWeight: '700',
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 24,
+    },
+    titleSection: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    title: {
+        fontFamily: fonts.headline,
+        fontSize: fontSize['3xl'],
+        lineHeight: lineHeight['3xl'],
+        color: colors.textPrimary,
+        textAlign: 'center',
+        fontWeight: '700',
+    },
+    subtitle: {
+        fontFamily: fonts.body,
+        fontSize: fontSize.base,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: 8,
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        rowGap: 14,
+    },
+    card: {
+        width: '48%',
+        borderRadius: 24,
+        padding: 16,
+        minHeight: 132,
+        justifyContent: 'space-between',
+    },
+    cardUnselected: {
+        backgroundColor: colors.surface,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+    },
+    cardSelected: {
+        backgroundColor: colors.surface,
+        borderWidth: 2,
+        borderColor: colors.primary[800],
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    iconCircle: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    iconCircleUnselected: {
+        backgroundColor: colors.neutral[200],
+    },
+    iconCircleSelected: {
+        backgroundColor: colors.tertiary[100],
+    },
+    checkBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: colors.primary[800],
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cardFooter: {
+        marginTop: 14,
+    },
+    languageName: {
+        fontFamily: fonts.headline,
+        fontSize: fontSize.lg,
+        color: colors.textPrimary,
+        fontWeight: '700',
+    },
+    languageGreeting: {
+        fontFamily: fonts.body,
+        fontSize: fontSize.sm,
+        color: colors.textSecondary,
+        marginTop: 2,
+    },
+    footer: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
+    continueButton: {
+        backgroundColor: colors.primary[800],
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    continueButtonDisabled: {
+        backgroundColor: colors.disabled,
+    },
+    continueText: {
+        fontFamily: fonts.label,
+        fontSize: fontSize.base,
+        color: colors.neutral[50],
+    },
+});
