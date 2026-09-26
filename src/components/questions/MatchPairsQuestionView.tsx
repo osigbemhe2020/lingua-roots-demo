@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -30,7 +30,7 @@ export const MatchPairsQuestionView: React.FC<MatchPairsQuestionViewProps> = ({
     const [matchedPairKeys, setMatchedPairKeys] = useState<string[]>([]);
     const [wrongPairIds, setWrongPairIds] = useState<string[]>([]);
 
-    // Create source tiles and target tiles shuffled independently
+    // Create source tiles and target tiles shuffled deterministically
     const { sourceTiles, targetTiles } = useMemo(() => {
         const sources: Tile[] = question.pairs.map((p, idx) => ({
             id: `src-${idx}-${p.source}`,
@@ -46,18 +46,18 @@ export const MatchPairsQuestionView: React.FC<MatchPairsQuestionViewProps> = ({
             pairKey: `${p.source}:::${p.target}`,
         }));
 
-        // Deterministic or pseudorandom shuffle
-        const shuffledSources = [...sources].sort(() => 0.5 - Math.random());
-        const shuffledTargets = [...targets].sort(() => 0.5 - Math.random());
+        // Deterministic pseudo-shuffle using string hash to keep render pure
+        const hashSeed = (str: string) =>
+            str.split('').reduce((acc, char) => (acc * 31 + char.charCodeAt(0)) | 0, 0);
+
+        const shuffledSources = [...sources].sort(
+            (a, b) => hashSeed(a.id + question.id) - hashSeed(b.id + question.id)
+        );
+        const shuffledTargets = [...targets].sort(
+            (a, b) => hashSeed(a.id + question.id + 'tgt') - hashSeed(b.id + question.id + 'tgt')
+        );
 
         return { sourceTiles: shuffledSources, targetTiles: shuffledTargets };
-    }, [question]);
-
-    // Reset when question changes
-    useEffect(() => {
-        setSelectedTile(null);
-        setMatchedPairKeys([]);
-        setWrongPairIds([]);
     }, [question]);
 
     // Handle tile selection

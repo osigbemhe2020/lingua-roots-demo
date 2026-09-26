@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -29,15 +29,10 @@ export const ListenAndTypeQuestionView: React.FC<ListenAndTypeQuestionViewProps>
             ? question.wordBank
             : question.correctAnswer.split(' ');
 
-    const [bankItems, setBankItems] = useState<{ id: string; word: string }[]>([]);
-
-    useEffect(() => {
-        const items = bankWords.map((word, index) => ({
-            id: `${word}-${index}`,
-            word,
-        }));
-        setBankItems(items);
-    }, [question]);
+    const bankItems = bankWords.map((word, index) => ({
+        id: `${word}-${index}`,
+        word,
+    }));
 
     const handlePlayAudio = (slow: boolean = false) => {
         if (slow) {
@@ -117,7 +112,7 @@ export const ListenAndTypeQuestionView: React.FC<ListenAndTypeQuestionViewProps>
 
                 {/* Subtitle / Hint */}
                 <Text style={styles.audioHint}>
-                    "{question.audioLabel}"
+                    &ldquo;{question.audioLabel}&rdquo;
                 </Text>
             </View>
 

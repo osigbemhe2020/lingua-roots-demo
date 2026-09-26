@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { Button } from './Button';
 import { colors } from '../theme/colors';
 import { fonts, fontSize } from '../theme/typography';
 
@@ -25,17 +26,11 @@ export const FeedbackSheet: React.FC<FeedbackSheetProps> = ({
         // Idle state: normal "Check Answer" footer
         return (
             <View style={styles.idleContainer}>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.actionButton,
-                        !isAnswerReady && styles.actionButtonDisabled,
-                        pressed && isAnswerReady && { opacity: 0.9 },
-                    ]}
+                <Button
+                    title="Check Answer"
                     disabled={!isAnswerReady}
                     onPress={onCheckOrContinue}
-                >
-                    <Text style={styles.actionButtonText}>Check Answer</Text>
-                </Pressable>
+                />
             </View>
         );
     }
@@ -92,29 +87,23 @@ export const FeedbackSheet: React.FC<FeedbackSheetProps> = ({
             </View>
 
             {/* Big White Continue CTA Button */}
-            <Pressable
-                style={({ pressed }) => [
-                    styles.continueButton,
-                    pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
-                ]}
+            <Button
+                title="Continue"
+                variant="white"
                 onPress={onCheckOrContinue}
-            >
-                <Text
-                    style={[
-                        styles.continueButtonText,
-                        isSuccess
-                            ? styles.continueButtonTextSuccess
-                            : styles.continueButtonTextError,
-                    ]}
-                >
-                    Continue
-                </Text>
-                <Feather
-                    name="arrow-right"
-                    size={20}
-                    color={isSuccess ? colors.secondary[700] : colors.error}
-                />
-            </Pressable>
+                icon={
+                    <Feather
+                        name="arrow-right"
+                        size={20}
+                        color={isSuccess ? colors.secondary[700] : colors.error}
+                    />
+                }
+                textStyle={
+                    isSuccess
+                        ? styles.continueButtonTextSuccess
+                        : styles.continueButtonTextError
+                }
+            />
         </View>
     );
 };

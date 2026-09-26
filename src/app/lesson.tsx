@@ -1,37 +1,38 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { fonts, fontSize } from '../theme/typography';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button } from '../components/Button';
+import { FeedbackSheet } from '../components/FeedbackSheet';
+import { LevelPath } from '../components/LevelPath';
+import { ProgressHeader } from '../components/ProgressBarHeader';
+import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { LANGUAGES } from '../data/languages';
 import {
     LanguageId,
+    ListenAndTypeQuestion,
     MultipleChoiceQuestion,
     WordBankQuestion,
-    ListenAndTypeQuestion,
 } from '../data/mockLessons';
 import { useLessonProgress } from '../hooks/UseLessonProgress';
+import { colors } from '../theme/colors';
+import { fonts, fontSize } from '../theme/typography';
 import { checkAnswer, UserAnswer } from '../utils/checkAnswer';
-import { ProgressHeader } from '../components/ProgressBarHeader';
-import { QuestionRenderer } from '../components/questions/QuestionRenderer';
-import { FeedbackSheet } from '../components/FeedbackSheet';
 
 export default function LessonScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { languageId } = useLocalSearchParams<{ languageId?: string }>();
 
-    // Resolve language and dataset (map e.g. 'swahili' -> 'sw')
+    // Resolve language and dataset
     const langKey: LanguageId =
         languageId === 'yoruba' || languageId === 'yo'
             ? 'yo'
             : languageId === 'igbo' || languageId === 'ig'
-            ? 'ig'
-            : languageId === 'hausa' || languageId === 'ha'
-            ? 'ha'
-            : 'sw';
+                ? 'ig'
+                : languageId === 'hausa' || languageId === 'ha'
+                    ? 'ha'
+                    : 'sw';
 
     const selectedLanguage =
         LANGUAGES.find((lang) => lang.id === languageId || lang.id === langKey) || LANGUAGES[0];
@@ -44,36 +45,36 @@ export default function LessonScreen() {
         state.answerState === 'submitted_correct'
             ? true
             : state.answerState === 'submitted_incorrect'
-            ? false
-            : null;
+                ? false
+                : null;
 
     // Derived answer states for child components
     const selectedOption: string | null =
         state.selectedAnswer &&
-        typeof state.selectedAnswer === 'object' &&
-        'value' in state.selectedAnswer &&
-        typeof (state.selectedAnswer as { value: unknown }).value === 'string'
+            typeof state.selectedAnswer === 'object' &&
+            'value' in state.selectedAnswer &&
+            typeof (state.selectedAnswer as { value: unknown }).value === 'string'
             ? (state.selectedAnswer as { value: string }).value
             : null;
 
     const selectedWords: string[] =
         state.selectedAnswer &&
-        typeof state.selectedAnswer === 'object' &&
-        'wordsArray' in state.selectedAnswer &&
-        Array.isArray((state.selectedAnswer as { wordsArray: unknown }).wordsArray)
+            typeof state.selectedAnswer === 'object' &&
+            'wordsArray' in state.selectedAnswer &&
+            Array.isArray((state.selectedAnswer as { wordsArray: unknown }).wordsArray)
             ? (state.selectedAnswer as { wordsArray: string[] }).wordsArray
             : state.selectedAnswer &&
-              typeof state.selectedAnswer === 'object' &&
-              'value' in state.selectedAnswer &&
-              Array.isArray((state.selectedAnswer as { value: unknown }).value)
-            ? (state.selectedAnswer as { value: string[] }).value
-            : [];
+                typeof state.selectedAnswer === 'object' &&
+                'value' in state.selectedAnswer &&
+                Array.isArray((state.selectedAnswer as { value: unknown }).value)
+                ? (state.selectedAnswer as { value: string[] }).value
+                : [];
 
     const matchedPairsCount: number =
         state.selectedAnswer &&
-        typeof state.selectedAnswer === 'object' &&
-        'count' in state.selectedAnswer &&
-        typeof (state.selectedAnswer as { count: unknown }).count === 'number'
+            typeof state.selectedAnswer === 'object' &&
+            'count' in state.selectedAnswer &&
+            typeof (state.selectedAnswer as { count: unknown }).count === 'number'
             ? (state.selectedAnswer as { count: number }).count
             : 0;
 
@@ -232,16 +233,15 @@ export default function LessonScreen() {
                         <View style={styles.xpGainedPill}>
                             <Text style={styles.xpGainedText}>Total XP: {state.totalXp}</Text>
                         </View>
+                        <LevelPath />
                     </View>
                 </View>
 
                 <View style={styles.footer}>
-                    <Pressable
-                        style={styles.actionButton}
+                    <Button
+                        title="Choose Another Language"
                         onPress={() => router.replace('/language-select')}
-                    >
-                        <Text style={styles.actionButtonText}>Choose Another Language</Text>
-                    </Pressable>
+                    />
                 </View>
             </View>
         );
@@ -308,7 +308,7 @@ export default function LessonScreen() {
                 )}
             </ScrollView>
 
-            {/* Story 4: Dynamic Bottom Feedback Sheet (Green for correct, Red for incorrect) */}
+            {/*  Dynamic Bottom Feedback Sheet (Green for correct, Red for incorrect) */}
             <FeedbackSheet
                 isSubmitted={isSubmitted}
                 isCorrect={isCorrect}

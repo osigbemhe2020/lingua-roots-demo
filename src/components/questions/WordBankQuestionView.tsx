@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -22,15 +22,10 @@ export const WordBankQuestionView: React.FC<WordBankQuestionViewProps> = ({
 }) => {
     // Keep track of which bank indices are currently placed in assembly
     // We track items by unique object/id { id: string, word: string } to support duplicate words seamlessly
-    const [bankItems, setBankItems] = useState<{ id: string; word: string }[]>([]);
-
-    useEffect(() => {
-        const items = question.wordBank.map((word, index) => ({
-            id: `${word}-${index}`,
-            word,
-        }));
-        setBankItems(items);
-    }, [question]);
+    const bankItems = question.wordBank.map((word, index) => ({
+        id: `${word}-${index}`,
+        word,
+    }));
 
     // Handle tapping a word in the word bank
     const handleAddWord = (item: { id: string; word: string }) => {
@@ -70,7 +65,9 @@ export const WordBankQuestionView: React.FC<WordBankQuestionViewProps> = ({
                     <Text style={styles.instructionText}>Translate this sentence</Text>
                 </View>
                 <View style={styles.promptBubble}>
-                    <Text style={styles.englishPromptText}>"{question.englishPrompt}"</Text>
+                    <Text style={styles.englishPromptText}>
+                        &ldquo;{question.englishPrompt}&rdquo;
+                    </Text>
                 </View>
             </View>
 

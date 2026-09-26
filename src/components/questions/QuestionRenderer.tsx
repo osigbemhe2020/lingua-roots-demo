@@ -43,6 +43,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     case 'fill_in_blank':
                         return (
                             <MultipleChoiceQuestionView
+                                key={question.id}
                                 question={question as MultipleChoiceQuestion}
                                 selectedOption={selectedOption}
                                 onSelectOption={onSelectOption}
@@ -54,6 +55,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     case 'word_bank':
                         return (
                             <WordBankQuestionView
+                                key={question.id}
                                 question={question as WordBankQuestion}
                                 selectedWords={selectedWords}
                                 onWordsChange={onWordsChange}
@@ -65,6 +67,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     case 'listen_and_type':
                         return (
                             <ListenAndTypeQuestionView
+                                key={question.id}
                                 question={question as ListenAndTypeQuestion}
                                 selectedWords={selectedWords}
                                 onWordsChange={onWordsChange}
@@ -76,6 +79,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     case 'match_pairs':
                         return (
                             <MatchPairsQuestionView
+                                key={question.id}
                                 question={question as MatchPairsQuestion}
                                 matchedPairsCount={matchedPairsCount}
                                 onMatchProgress={onMatchProgress}

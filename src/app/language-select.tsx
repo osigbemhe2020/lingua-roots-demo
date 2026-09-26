@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { fonts, fontSize, lineHeight } from '../theme/typography';
 
+import { Button } from '../components/Button';
 import { LanguageOption, LANGUAGES } from '../data/languages';
 
 export default function LanguageSelect() {
@@ -38,15 +39,7 @@ export default function LanguageSelect() {
         >
             {/* Header */}
             <View style={styles.header}>
-                <Pressable style={styles.menuButton} hitSlop={12}>
-                    <Feather name="menu" size={24} color={colors.textPrimary} />
-                </Pressable>
-
                 <Text style={styles.brandTitle}>LinguaRoots</Text>
-
-                <View style={styles.xpBadge}>
-                    <Text style={styles.xpText}>XP 0</Text>
-                </View>
             </View>
 
             {/* Main Content */}
@@ -103,22 +96,17 @@ export default function LanguageSelect() {
 
             {/* Footer CTA */}
             <View style={styles.footer}>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.continueButton,
-                        !selectedId && styles.continueButtonDisabled,
-                        pressed && { opacity: 0.9 },
-                    ]}
+                <Button
+                    title="Continue"
+                    disabled={!selectedId}
+                    icon={<Feather name="arrow-right" size={20} color={colors.neutral[50]} />}
                     onPress={() =>
                         router.push({
                             pathname: '/lesson',
                             params: { languageId: selectedId },
                         })
                     }
-                >
-                    <Text style={styles.continueText}>Continue</Text>
-                    <Feather name="arrow-right" size={20} color={colors.neutral[50]} />
-                </Pressable>
+                />
             </View>
         </View>
     );
@@ -130,33 +118,17 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 12,
     },
-    menuButton: {
-        padding: 4,
-    },
     brandTitle: {
+        textAlign: 'center',
         fontFamily: fonts.headline,
         fontSize: fontSize['2xl'],
         color: colors.primary[700],
         letterSpacing: -0.5,
     },
-    xpBadge: {
-        backgroundColor: colors.tertiary[100],
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 14,
-    },
-    xpText: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize.xs,
-        color: colors.primary[800],
-        fontWeight: '700',
-    },
+
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 16,
@@ -174,13 +146,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '700',
     },
-    subtitle: {
-        fontFamily: fonts.body,
-        fontSize: fontSize.base,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 8,
-    },
+
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
