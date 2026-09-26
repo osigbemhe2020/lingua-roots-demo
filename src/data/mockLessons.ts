@@ -22,9 +22,9 @@ export type WordBankQuestion = BaseQuestion & {
 
 export type ListenAndTypeQuestion = BaseQuestion & {
     type: 'listen_and_type';
-    audioLabel: string; // what the mock "audio" represents — no real audio file required
-    correctAnswer: string; // compared case/whitespace-insensitively
-    wordBank?: string[]; // word pills for Duolingo-style pill assembly
+    audioLabel: string;
+    correctAnswer: string;
+    wordBank?: string[];
 };
 
 export type MatchPairsQuestion = BaseQuestion & {

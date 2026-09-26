@@ -1,11 +1,3 @@
-// data/levels.ts
-//
-// Mock data for the level-path strip on the lesson completion screen
-// (Story 7). Only Level 1 has real content in this exercise — the rest
-// exist purely to show a locked "more content coming" visual, matching
-// a Candy Crush/Duolingo-style level map. No navigation is wired to
-// locked levels; they're decorative, not functional.
-
 export type LevelStatus = 'complete' | 'locked';
 
 export type Level = {

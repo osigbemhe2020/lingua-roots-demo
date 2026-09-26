@@ -1,7 +1,7 @@
 // components/ProgressBarHeader.tsx
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts, fontSize } from '../theme/typography';
 
@@ -44,7 +44,10 @@ export function ProgressHeader({
                         <Ionicons name="trophy" size={14} color={colors.primary[800]} />
                         <Text style={styles.xpText}>XP {totalXp}</Text>
                     </View>
-                    <XPGainPopup lastXpGained={lastXpGained} />
+                    <XPGainPopup
+                        key={lastXpGained?.triggerId ?? 'idle'}
+                        lastXpGained={lastXpGained}
+                    />
                 </View>
             </View>
 
@@ -77,8 +80,8 @@ export function XPGainPopup({
 }: {
     lastXpGained: { amount: number; triggerId: string } | null;
 }) {
-    const opacity = useRef(new Animated.Value(0)).current;
-    const translateY = useRef(new Animated.Value(0)).current;
+    const [opacity] = useState(() => new Animated.Value(0));
+    const [translateY] = useState(() => new Animated.Value(0));
 
     useEffect(() => {
         if (!lastXpGained) return;
@@ -106,7 +109,7 @@ export function XPGainPopup({
                 useNativeDriver: true,
             }),
         ]).start();
-    }, [lastXpGained?.triggerId]);
+    }, [lastXpGained, opacity, translateY]);
 
     if (!lastXpGained) return null;
 

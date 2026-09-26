@@ -1,9 +1,4 @@
 // components/LevelPath.tsx
-//
-// Renders the level-map strip for Story 7's completion screen.
-// Purely presentational — reads the static mock levels list, no
-// interaction on locked nodes (onPress is intentionally omitted
-// for locked levels, not just visually disabled).
 
 import { Level, levels } from '@/data/levels';
 import { colors } from '@/theme/colors';

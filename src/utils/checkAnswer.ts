@@ -1,21 +1,4 @@
-// utils/checkAnswer.ts
-//
-// Single source of truth for "was this answer correct" across all
-// 5 question types. Each type stores its correct answer differently
-// (see table in the code review discussion), so this function is the
-// one place that knows how to compare each shape — components and the
-// reducer don't need to duplicate that logic.
-//
-// XP is NOT decided here — it's already sitting on the question object
-// (question.xp). This function only returns true/false; the caller
-// (LessonScreen, on submit) reads question.xp itself and passes both
-// into the SUBMIT_ANSWER action together:
-//
-//   const isCorrect = checkAnswer(currentQuestion, selectedAnswer);
-//   dispatch({
-//     type: 'SUBMIT_ANSWER',
-//     payload: { isCorrect, xp: currentQuestion.xp },
-//   });
+
 
 import { Question } from '../data/mockLessons';
 

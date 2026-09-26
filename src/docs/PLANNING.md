@@ -148,18 +148,22 @@ Answering a question incorrectly causes it to reappear later in the same lesson 
 5. Progress indicator (Story 2) reflects "questions resolved" against total unique questions, not raw index position, since queue length can grow as answers come in wrong
 6. **Open gap:** explicitly documented as in-session adaptive requeueing, not spaced repetition — no cross-session persistence, no review scheduling by date, stated plainly to avoid overclaiming the algorithm's sophistication
 
-## Story 7 — End-of-lesson state (stretch, flagged not required)
-
+## Story 7 — End-of-lesson state with level map
+ 
 **Context**
-Not explicitly requested in the bullet list, but implied by "moves the user to the next question" needing a defined terminal case once questions run out. Included only if time allows.
-
+Not explicitly requested in the original bullet list, but implied by "moves the user to the next question" needing a defined terminal case once questions run out. Expanded on request beyond a plain completion message into a small level-map preview (Candy Crush/Duolingo-style level path) — Level 1 shown complete, further levels shown locked, since this exercise's scope only ever builds one level's worth of content per language (see Story 6a).
+ 
 **Outcome**
-After the last question is answered and Continue is tapped, the learner sees a simple completion state rather than an error or blank screen.
-
+After the last question is answered and Continue is tapped, the learner sees a completion screen showing their session XP, plus a level path showing Level 1 as complete and a few subsequent levels as locked.
+ 
 **Acceptance criteria**
-1. Reaching the end of the question array shows a distinct "lesson complete" state instead of crashing or looping
+1. Reaching the end of the question queue shows a distinct "lesson complete" state instead of crashing or looping
 2. Total XP earned in the session is visible on this screen
-3. **Open gap:** explicitly out of scope per the brief ("you do not need to build a complete application") — included only as a polish item, stated as such in README so it doesn't read as scope creep
+3. A level-path strip renders below the completion message: Level 1 shown unlocked/complete (checkmark), Levels 2+ shown locked (lock icon, visually muted)
+4. Locked levels are not tappable — no navigation, no "coming soon" toast, just a visual signal that more content exists
+5. **Open gap:** level data is a small hardcoded mock list (e.g. 5 levels), not a real progression system — only Level 1 has actual question content in this exercise, stated plainly rather than implying a working multi-level backend
+6. **Open gap:** explicitly a polish item beyond the brief's stated scope ("you do not need to build a complete application") — stated as such in README so it doesn't read as unacknowledged scope creep
+
 
 ---
 

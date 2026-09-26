@@ -1,23 +1,17 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
+import { CultureGreetingBanner } from '../components/CultureGreetingBanner';
 import { FeedbackSheet } from '../components/FeedbackSheet';
-import { LevelPath } from '../components/LevelPath';
+import { LessonCompletedView } from '../components/LessonCompletedView';
 import { ProgressHeader } from '../components/ProgressBarHeader';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { LANGUAGES } from '../data/languages';
-import {
-    LanguageId,
-    ListenAndTypeQuestion,
-    MultipleChoiceQuestion,
-    WordBankQuestion,
-} from '../data/mockLessons';
+import { LanguageId } from '../data/mockLessons';
 import { useLessonProgress } from '../hooks/UseLessonProgress';
 import { colors } from '../theme/colors';
-import { fonts, fontSize } from '../theme/typography';
 import { checkAnswer, UserAnswer } from '../utils/checkAnswer';
+import { getFeedbackDetails } from '../utils/feedback';
 
 export default function LessonScreen() {
     const router = useRouter();
@@ -26,16 +20,16 @@ export default function LessonScreen() {
 
     // Resolve language and dataset
     const langKey: LanguageId =
-        languageId === 'yoruba' || languageId === 'yo'
+        languageId === 'yo'
             ? 'yo'
-            : languageId === 'igbo' || languageId === 'ig'
+            : languageId === 'ig'
                 ? 'ig'
-                : languageId === 'hausa' || languageId === 'ha'
+                : languageId === 'ha'
                     ? 'ha'
                     : 'sw';
 
     const selectedLanguage =
-        LANGUAGES.find((lang) => lang.id === languageId || lang.id === langKey) || LANGUAGES[0];
+        LANGUAGES.find((lang) => lang.id === langKey) || LANGUAGES[0];
 
     // Lesson state — owned by useLessonProgress reducer state machine
     const { state, dispatch, currentQuestion, isComplete, progress } = useLessonProgress(langKey);
@@ -154,96 +148,16 @@ export default function LessonScreen() {
         }
     };
 
-    // Calculate feedback message and correct answer string for Story 4 feedback sheet
-    const getFeedbackDetails = () => {
-        if (!currentQuestion) return { correctAnswerText: '', explanation: '' };
-
-        switch (currentQuestion.type) {
-            case 'multiple_choice':
-            case 'fill_in_blank': {
-                const q = currentQuestion as MultipleChoiceQuestion;
-                return {
-                    correctAnswerText: q.correctAnswer,
-                    explanation: `${q.correctAnswer} is the correct translation!`,
-                };
-            }
-            case 'word_bank': {
-                const q = currentQuestion as WordBankQuestion;
-                const orderStr = q.correctOrder.join(' ');
-                return {
-                    correctAnswerText: orderStr,
-                    explanation: `"${orderStr}" correctly translates "${q.englishPrompt}"`,
-                };
-            }
-            case 'listen_and_type': {
-                const q = currentQuestion as ListenAndTypeQuestion;
-                return {
-                    correctAnswerText: q.correctAnswer,
-                    explanation: `"${q.correctAnswer}" is what was spoken!`,
-                };
-            }
-            case 'match_pairs':
-                return {
-                    correctAnswerText: 'All pairs matched',
-                    explanation: 'All vocabulary pairs matched successfully!',
-                };
-            default:
-                return { correctAnswerText: '', explanation: '' };
-        }
-    };
-
-    const { correctAnswerText, explanation } = getFeedbackDetails();
+    const { correctAnswerText, explanation } = getFeedbackDetails(currentQuestion);
 
     // Completion state
     if (isComplete) {
         return (
-            <View
-                style={[
-                    styles.container,
-                    {
-                        paddingTop: Math.max(insets.top, 16),
-                        paddingBottom: Math.max(insets.bottom, 20),
-                    },
-                ]}
-            >
-                <View style={styles.header}>
-                    <Pressable
-                        style={styles.iconButton}
-                        onPress={() => router.replace('/language-select')}
-                        hitSlop={12}
-                    >
-                        <Feather name="x" size={24} color={colors.textPrimary} />
-                    </Pressable>
-                    <View style={styles.xpBadge}>
-                        <Ionicons name="trophy" size={14} color={colors.primary[800]} />
-                        <Text style={styles.xpText}>XP {state.totalXp}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.completedContent}>
-                    <View style={styles.completedCard}>
-                        <View style={styles.trophyCircle}>
-                            <Ionicons name="trophy" size={42} color={colors.primary[800]} />
-                        </View>
-                        <Text style={styles.completedTitle}>Lesson Completed!</Text>
-                        <Text style={styles.completedSubtitle}>
-                            You earned XP practicing {selectedLanguage.name}!
-                        </Text>
-
-                        <View style={styles.xpGainedPill}>
-                            <Text style={styles.xpGainedText}>Total XP: {state.totalXp}</Text>
-                        </View>
-                        <LevelPath />
-                    </View>
-                </View>
-
-                <View style={styles.footer}>
-                    <Button
-                        title="Choose Another Language"
-                        onPress={() => router.replace('/language-select')}
-                    />
-                </View>
-            </View>
+            <LessonCompletedView
+                totalXp={state.totalXp}
+                languageName={selectedLanguage.name}
+                onClose={() => router.replace('/language-select')}
+            />
         );
     }
 
@@ -259,7 +173,7 @@ export default function LessonScreen() {
                 },
             ]}
         >
-            {/* Design Progress Header: "Question X of Y", "Swahili Basics", and smooth green progress bar */}
+            {/* Design Progress Header */}
             <ProgressHeader
                 currentQuestionNumber={state.resolvedCount + 1}
                 totalQuestions={state.totalCount}
@@ -275,22 +189,10 @@ export default function LessonScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Brand / Culture Banner */}
-                <View style={styles.graphicCard}>
-                    <View style={styles.graphicInner}>
-                        <View style={styles.brandWordmark}>
-                            <Text style={styles.graphicBrandText}>Lingua Roots</Text>
-                        </View>
-                        <View style={styles.characterBadge}>
-                            <Ionicons name="sparkles" size={24} color={colors.primary[500]} />
-                        </View>
-                        <Text style={styles.characterGreeting}>
-                            {selectedLanguage.greeting}, Learner!
-                        </Text>
-                        <Text style={styles.characterCaption}>
-                            Let's learn {selectedLanguage.name} today.
-                        </Text>
-                    </View>
-                </View>
+                <CultureGreetingBanner
+                    greeting={selectedLanguage.greeting}
+                    languageName={selectedLanguage.name}
+                />
 
                 {/* Modular Question View Component */}
                 {currentQuestion && (
@@ -308,7 +210,7 @@ export default function LessonScreen() {
                 )}
             </ScrollView>
 
-            {/*  Dynamic Bottom Feedback Sheet (Green for correct, Red for incorrect) */}
+            {/* Dynamic Bottom Feedback Sheet */}
             <FeedbackSheet
                 isSubmitted={isSubmitted}
                 isCorrect={isCorrect}
@@ -326,148 +228,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-    },
-    iconButton: {
-        padding: 4,
-    },
-    xpBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.neutral[200],
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        gap: 6,
-    },
-    xpText: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize.sm,
-        color: colors.textPrimary,
-        fontWeight: '700',
-    },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 4,
         paddingBottom: 24,
-    },
-    graphicCard: {
-        backgroundColor: colors.surface,
-        borderRadius: 28,
-        padding: 20,
-        alignItems: 'center',
-        marginBottom: 24,
-        borderWidth: 1.5,
-        borderColor: colors.neutral[200],
-        shadowColor: colors.textPrimary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-    },
-    graphicInner: {
-        alignItems: 'center',
-    },
-    brandWordmark: {
-        marginBottom: 8,
-    },
-    graphicBrandText: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize.xs,
-        color: colors.primary[700],
-        letterSpacing: 0.5,
-    },
-    characterBadge: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.tertiary[100],
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    characterGreeting: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize.base,
-        color: colors.textPrimary,
-        fontWeight: '700',
-    },
-    characterCaption: {
-        fontFamily: fonts.body,
-        fontSize: fontSize.xs,
-        color: colors.textSecondary,
-        marginTop: 2,
-    },
-    footer: {
-        paddingHorizontal: 20,
-        paddingTop: 10,
-    },
-    actionButton: {
-        height: 58,
-        borderRadius: 29,
-        backgroundColor: colors.primary[800],
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    actionButtonText: {
-        fontFamily: fonts.label,
-        fontSize: fontSize.base,
-        color: colors.neutral[50],
-        fontWeight: '600',
-    },
-    completedContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    completedCard: {
-        width: '100%',
-        backgroundColor: colors.surface,
-        borderRadius: 28,
-        padding: 32,
-        alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: colors.neutral[200],
-    },
-    trophyCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: colors.tertiary[100],
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    completedTitle: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize['2xl'],
-        color: colors.textPrimary,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    completedSubtitle: {
-        fontFamily: fonts.body,
-        fontSize: fontSize.base,
-        color: colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    xpGainedPill: {
-        backgroundColor: colors.tertiary[100],
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 16,
-    },
-    xpGainedText: {
-        fontFamily: fonts.headline,
-        fontSize: fontSize.sm,
-        color: colors.primary[800],
-        fontWeight: '700',
     },
 });

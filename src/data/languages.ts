@@ -8,28 +8,28 @@ export interface LanguageOption {
 
 export const LANGUAGES: LanguageOption[] = [
     {
-        id: 'swahili',
+        id: 'sw',
         name: 'Swahili',
         greeting: 'Jambo',
         iconType: 'ionicons',
         iconName: 'globe-outline',
     },
     {
-        id: 'yoruba',
+        id: 'yo',
         name: 'Yoruba',
         greeting: 'Bawo ni',
         iconType: 'material',
         iconName: 'translate',
     },
     {
-        id: 'hausa',
+        id: 'ha',
         name: 'Hausa',
         greeting: 'Sannu',
         iconType: 'ionicons',
         iconName: 'earth-outline',
     },
     {
-        id: 'igbo',
+        id: 'ig',
         name: 'Igbo',
         greeting: 'Ndeewo',
         iconType: 'ionicons',
