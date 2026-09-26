@@ -8,6 +8,15 @@ Full sprint planning, user stories, and every deliberate scope decision (includi
 
 ## Getting started
 
+### 1. clone the repository
+
+```bash
+git clone https://github.com/osigbemhe2020/lingua-roots-demo.git
+cd lingua-roots-demo
+```
+
+### 2. install dependencies
+
 **Requirements:** Node 18+, and either the Expo Go app on a physical device or an iOS Simulator / Android Emulator.
 
 ```bash
